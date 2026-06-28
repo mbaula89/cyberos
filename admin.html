@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBEROS | Admin Control Panel</title>
+    <style>
+        :root {
+            --bg-deep: #0A0E17;
+            --neon-cyan: #00F2FF;
+            --glass: rgba(30, 41, 59, 0.7);
+            --text-main: #E2E8F0;
+            --danger: #FF4D4D;
+            --success: #00FF9D;
+        }
+
+        * { box-sizing: border-box; transition: 0.3s; }
+        body { background: var(--bg-deep); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; }
+
+        .header-main { padding: 30px; text-align: center; border-bottom: 2px solid var(--neon-cyan); background: linear-gradient(180deg, #1e293b, #0A0E17); }
+        .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); padding: 25px; border-radius: 20px; margin: 20px auto; max-width: 600px; }
+        
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #334155; background: #0F172A; color: white; }
+        input:focus, textarea:focus { outline: none; border-color: var(--neon-cyan); }
+
+        .btn-neon { background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 12px 20px; border-radius: 10px; cursor: pointer; text-decoration: none; display: inline-block; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-neon:hover { background: var(--neon-cyan); color: #000; }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        .node-item { display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 4px solid var(--neon-cyan); }
+    </style>
+</head>
+<body>
+
+    <header class="header-main">
+        <h1>CYBEROS ▪ ADMIN ENGINE</h1>
+        <p style="color:var(--neon-cyan)">Enterprise Control Tower</p>
+    </header>
+
+    <div class="glass-card">
+        <h2>📢 Tangazo la Mfumo (Live Note)</h2>
+        <input type="text" id="admin-note" placeholder="Weka ujumbe wa mfumo unaoonekana kwenye ticker...">
+        <button class="btn-neon" onclick="updateNote()">Sasisha Tangazo</button>
+    </div>
+
+    <div class="glass-card">
+        <h2>➕ Sajili Node / Platform Mpya</h2>
+        <input type="text" id="p-name" placeholder="Jina la Node (Mfano: Binance)">
+        <textarea id="p-desc" placeholder="Maelezo mafupi ya Node..."></textarea>
+        <input type="text" id="p-link" placeholder="URL ya Node (Link)">
+        
+        <label style="color:#94a3b8; font-size:13px;">Chagua Kategoria:</label>
+        <select id="p-cat">
+            <option value="Stable">Stable</option>
+            <option value="Growth">Growth</option>
+            <option value="Tech">Tech</option>
+        </select>
+
+        <label style="color:#94a3b8; font-size:13px; display:block; margin-top:10px;">Weka Logo (Picha):</label>
+        <input type="file" id="p-logo" onchange="encodeImage(this)">
+
+        <button class="btn-neon" onclick="addPlatform()">SAJILI NODE</button>
+    </div>
+
+    <div class="glass-card">
+        <h2>📋 Nodes Zilizopo (`cyber_db`)</h2>
+        <div id="admin-nodes-list"></div>
+    </div>
+
+    <script>
+        let img64 = "";
+
+        function updateNote() {
+            let note = document.getElementById("admin-note").value;
+            if(note) {
+                localStorage.setItem("cyber_note", "CYBEROS V1.0 LIVE ● " + note + " ● ADMIN: REUBEN MBAULA");
+                alert("Tangazo limesasishwa!");
+                document.getElementById("admin-note").value = "";
+            }
+        }
+
+        function encodeImage(element) {
+            let file = element.files[0];
+            let reader = new FileReader();
+            reader.onloadend = function() {
+                img64 = reader.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function addPlatform() {
+            let name = document.getElementById("p-name").value;
+            let desc = document.getElementById("p-desc").value;
+            let link = document.getElementById("p-link").value;
+            let cat = document.getElementById("p-cat").value;
+
+            if(name && link) {
+                let db = JSON.parse(localStorage.getItem("cyber_db") || "[]");
+                db.push({ name, desc, link, category: cat, logo: img64 });
+                localStorage.setItem("cyber_db", JSON.stringify(db));
+                alert("Node imesajiliwa kikamilifu!");
+                document.getElementById("p-name").value = "";
+                document.getElementById("p-desc").value = "";
+                document.getElementById("p-link").value = "";
+                document.getElementById("p-logo").value = "";
+                img64 = "";
+                loadAdminNodes();
+            } else {
+                alert("Jaza jina na link angalau!");
+            }
+        }
+
+        function loadAdminNodes() {
+            let db = JSON.parse(localStorage.getItem("cyber_db") || "[]");
+            let list = document.getElementById("admin-nodes-list");
+            if(db.length === 0) {
+                list.innerHTML = "<p style='color:#94a3b8; text-align:center;'>Hakuna nodes zilizosajiliwa bado.</p>";
+                return;
+            }
+            list.innerHTML = db.map((item, index) => `
+                <div class="node-item">
+                    <div>
+                        <b style="color:var(--neon-cyan);">${item.name}</b> (${item.category})
+                        <br><span style="font-size:12px;">${item.desc}</span>
+                    </div>
+                    <button class="btn-neon btn-danger" style="width:auto; margin:0;" onclick="deleteNode(${index})">Futa</button>
+                </div>
+            `).join("");
+        }
+
+        function deleteNode(index) {
+            let db = JSON.parse(localStorage.getItem("cyber_db") || "[]");
+            db.splice(index, 1);
+            localStorage.setItem("cyber_db", JSON.stringify(db));
+            loadAdminNodes();
+        }
+
+        loadAdminNodes();
+    </script>
+</body>
+</html>
+
