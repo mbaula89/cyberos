@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBEROS - Secure Portal</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            text-align: center; 
+            background-color: #0a0e17; 
+            color: #00ffcc; 
+            padding: 20px; 
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container { 
+            background: #111827; 
+            width: 100%;
+            max-width: 420px; 
+            padding: 35px; 
+            border-radius: 12px; 
+            border: 2px solid #1f2937;
+            box-shadow: 0 0 25px rgba(0, 255, 204, 0.15); 
+        }
+        h2 { 
+            color: #ffffff; 
+            margin-bottom: 10px; 
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        p { 
+            color: #9ca3af; 
+            font-size: 14px;
+            margin-bottom: 25px; 
+        }
+        .user-info {
+            background-color: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #34d399;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+            word-break: break-all;
+            font-size: 13px;
+        }
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 12px 0; 
+            background-color: #1f2937;
+            border: 1px solid #374151; 
+            border-radius: 6px; 
+            font-size: 15px;
+            color: #ffffff;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #00ffcc;
+        }
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 10px 0; 
+            border: none; 
+            border-radius: 6px; 
+            color: #000000; 
+            font-weight: bold;
+            font-size: 16px; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+        }
+        .btn-email { background-color: #3b82f6; color: white; }
+        .btn-login { background-color: #10b981; color: white; }
+        .btn-google { background-color: #ef4444; color: white; }
+        .btn-phone { background-color: #8b5cf6; color: white; }
+        .btn-fb { background-color: #0284c7; color: white; }
+        
+        .btn-logout { 
+            background-color: #dc2626; 
+            color: white; 
+            display: none; 
+            margin-top: 20px;
+        }
+        hr { 
+            border: 0; 
+            border-top: 1px solid #374151; 
+            margin: 25px 0; 
+        }
+        .error-msg { 
+            color: #f87171; 
+            font-size: 13px; 
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .alt-methods {
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h2>CYBEROS</h2>
+        <p id="statusMsg">Jisajili au Ingia ili kuendelea</p>
+        
+        <div class="user-info" id="userInfo">Umeingia kama:<br><strong id="userEmail"></strong></div>
+        
+        <input type="email" id="email" placeholder="Weka Email yako">
+        <input type="password" id="password" placeholder="Weka Neno la siri (Password)">
+        <div class="error-msg" id="errorText"></div>
+        
+        <button class="btn-email" id="signUpBtn">Jisajili na Email</button>
+        <button class="btn-login" id="loginBtn">Ingia (Login)</button>
+
+        <hr>
+        <div class="alt-methods">Au tumia njia hizi rahisi:</div>
+        <button class="btn-google" id="googleBtn">Ingia na Google</button>
+        <button class="btn-phone" id="phoneBtn">Simu / SMS</button>
+        <button class="btn-fb" id="fbBtn">Ingia na Facebook</button>
+        
+        <button class="btn-logout" id="logoutBtn">Toka (Log out)</button>
+    </div>
+
+    <script>
+        // --- CONFIG YAKO HALISI YA FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAgyNae6if55VOxc6AXj8q7dACzgyHOEQI",
+            authDomain: "cyberos-99bb7.firebaseapp.com",
+            projectId: "cyberos-99bb7",
+            storageBucket: "cyberos-99bb7.firebasestorage.app",
+            messagingSenderId: "521023468915",
+            appId: "1:521023468915:web:ef5426d3a3053177240106"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+
+        // Elements
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const statusMsg = document.getElementById('statusMsg');
+        const errorText = document.getElementById('errorText');
+        const userInfo = document.getElementById('userInfo');
+        const userEmail = document.getElementById('userEmail');
+        
+        const signUpBtn = document.getElementById('signUpBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const googleBtn = document.getElementById('googleBtn');
+        const phoneBtn = document.getElementById('phoneBtn');
+        const fbBtn = document.getElementById('fbBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // 1. Kujisajili kwa Email na Password
+        signUpBtn.addEventListener('click', () => {
+            errorText.innerText = "";
+            auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
+                .then(() => {
+                    statusMsg.innerText = "Usajili umefanikiwa!";
+                })
+                .catch((error) => {
+                    errorText.innerText = error.message;
+                });
+        });
+
+        // 2. Kuingia (Login) kwa Email na Password
+        loginBtn.addEventListener('click', () => {
+            errorText.innerText = "";
+            auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
+                .catch((error) => {
+                    errorText.innerText = error.message;
+                });
+        });
+
+        // 3. Kuingia na Google
+        googleBtn.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .catch((error) => {
+                    console.error("Google Sign-In Error: ", error);
+                    errorText.innerText = "Hitilafu ya Google: " + error.message;
+                });
+        });
+
+        // 4. Njia nyingine (Facebook / Simu) 
+        phoneBtn.addEventListener('click', () => {
+            alert("Njia ya simu inahitaji kwanza iwezwe (Enabled) kwenye sehemu ya Authentication ya mradi wako wa Firebase.");
+        });
+
+        fbBtn.addEventListener('click', () => {
+            alert("Njia ya Facebook inahitaji usanidi wa kitufe cha Facebook Login kupitia Firebase na Meta Developers console.");
+        });
+
+        // 5. Kutoka (Logout)
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // Fuatilia hali ya mtumiaji
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                statusMsg.innerText = "Umeingia kwenye mfumo salama wa CYBEROS!";
+                userInfo.style.display = "block";
+                userEmail.innerText = user.email || user.phoneNumber || "Mtumiaji";
+                
+                emailInput.style.display = "none";
+                passwordInput.style.display = "none";
+                signUpBtn.style.display = "none";
+                loginBtn.style.display = "none";
+                googleBtn.style.display = "none";
+                phoneBtn.style.display = "none";
+                fbBtn.style.display = "none";
+                logoutBtn.style.display = "block";
+                errorText.innerText = "";
+            } else {
+                statusMsg.innerText = "Jisajili au Ingia ili kuendelea";
+                userInfo.style.display = "none";
+                
+                emailInput.style.display = "block";
+                passwordInput.style.display = "block";
+                signUpBtn.style.display = "block";
+                loginBtn.style.display = "block";
+                googleBtn.style.display = "block";
+                phoneBtn.style.display = "block";
+                fbBtn.style.display = "block";
+                logoutBtn.style.display = "none";
+                
+                emailInput.value = "";
+                passwordInput.value = "";
+                errorText.innerText = "";
+            }
+        });
+    </script>
+</body>
+</html>
+
