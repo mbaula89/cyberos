@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBEROS | Admin Control Panel</title>
+    <style>
+        :root {
+            --bg-deep: #0A0E17;
+            --neon-cyan: #00F2FF;
+            --glass: rgba(30, 41, 59, 0.7);
+            --text-main: #E2E8F0;
+            --danger: #FF4D4D;
+            --success: #00FF9D;
+        }
+
+        * { box-sizing: border-box; transition: 0.3s; }
+        body { background: var(--bg-deep); color: var(--text-main); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; }
+
+        .header-main { padding: 30px; text-align: center; border-bottom: 2px solid var(--neon-cyan); background: linear-gradient(180deg, #1e293b, #0A0E17); }
+        .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); padding: 25px; border-radius: 20px; margin: 20px auto; max-width: 650px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #334155; background: #0F172A; color: white; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
+
+        .btn-neon { background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 12px 20px; border-radius: 10px; cursor: pointer; text-decoration: none; display: inline-block; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-neon:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; box-shadow: 0 0 15px var(--danger); }
+        .btn-warning { border-color: #FFD700; color: #FFD700; }
+        .btn-warning:hover { background: #FFD700; color: #000; box-shadow: 0 0 15px #FFD700; }
+        
+        .node-item, .chat-admin-item { display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 4px solid var(--neon-cyan); }
+        .chat-admin-item { border-left-color: var(--success); }
+        
+        .chat-admin-panel { max-height: 300px; overflow-y: auto; padding-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <header class="header-main">
+        <h1>CYBEROS ▪ ADMIN ENGINE</h1>
+        <p style="color:var(--neon-cyan); letter-spacing: 1px;">Enterprise Control Tower - System Administration</p>
+    </header>
+
+    <div class="glass-card">
+        <h2>📢 Tangazo la Mfumo (Live Note)</h2>
+        <input type="text" id="admin-note" placeholder="Weka ujumbe wa mfumo unaoonekana kwenye ticker...">
+        <button class="btn-neon" onclick="updateNote()">Sasisha Tangazo</button>
+    </div>
+
+    <div class="glass-card">
+        <h2>➕ <span id="form-title">Sajili Node / Platform Mpya</span></h2>
+        <input type="hidden" id="edit-index" value="">
+        <input type="text" id="p-name" placeholder="Jina la Node (Mfano: Binance)">
+        <textarea id="p-desc" placeholder="Maelezo mafupi ya Node..."></textarea>
+        <input type="text" id="p-link" placeholder="URL ya Node (Link)">
+        
+        <label style="color:#94a3b8; font-size:13px;">Chagua Kategoria:</label>
+        <select id="p-cat">
+            <option value="Stable">Stable</option>
+            <option value="Growth">Growth</option>
+            <option value="Tech">Tech</option>
+        </select>
+
+        <label style="color:#94a3b8; font-size:13px; display:block; margin-top:10px;">Weka Logo (Picha):</label>
+        <input type="file" id="p-logo" onchange="encodeImage(this)">
+        <p style="font-size: 10px; color: #64748b; margin: 0;">Ukubwa wa picha utabanwa moja kwa moja kulinda mfumo.</p>
+
+        <button class="btn-neon" id="submit-btn" onclick="savePlatform()">SAJILI NODE</button>
+        <button class="btn-neon btn-danger" id="cancel-btn" style="display:none; margin-top:8px;" onclick="resetForm()">Ghairi Badiliko</button>
+    </div>
+
+    <div class="glass-card">
+        <h2>💬 Usimamizi wa Chati za Wawekezaji</h2>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">Fuatilia au futa jumbe zisizofaa kwenye Investor Community Chatroom.</p>
+        <div class="chat-admin-panel" id="admin-chat-list"></div>
+        <button class="btn-neon btn-danger" onclick="clearAllChats()" style="margin-top:15px;">Futa Jumbe Zote za Chati</button>
+    </div>
+
+    <div class="glass-card">
+        <h2>📋 Nodes Zilizopo (`cyber_db`)</h2>
+        <div id="admin-nodes-list"></div>
+    </div>
+
+    <script>
+        let img64 = "";
+
+        window.onload = function() {
+            // Ulinzi wa neno la siri (Password Authentication)
+            let pass = prompt("Weka Neno la Siri (Password) ya Admin kuingia CYBEROS Control Tower:");
+            if (pass !== "cyberos_admin") {
+                alert("Neno la siri si sahihi! Unarudishwa kwenye ukurasa wa mwanzo.");
+                window.location.href = "index.html";
+            } else {
+                loadAdminNodes();
+                loadAdminChats();
+            }
+        };
+
+        function updateNote() {
+            let note = document.getElementById("admin-note").value;
+            if(note) {
+                localStorage.setItem("cyber_note", "CYBEROS V1.0 LIVE ● " + note + " ● ADMIN: REUBEN MBAULA");
+                alert("Tangazo limesasishwa!");
+                document.getElementById("admin-note").value = "";
+            } else {
+                alert("Tafadhali jaza tangazo kwanza.");
+            }
+        }
+
+        // Bano picha (Image Compression) kuzuia LocalStorage kujaa
+        function encodeImage(element) {
+            let file = element.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onloadend = function() {
+                    let image = new Image();
+                    image.src = reader.result;
+                    image.onload = function() {
+                        let canvas = document.createElement('canvas');
+                        let maxW = 300;
+                        let maxH = 300;
+                        let w = image.width;
+                        let h = image.height;
+                        
+                        if (w > h) {
+                            if (w > maxW) { h *= maxW / w; w = maxW; }
+                        } else {
+                            if (h > maxH) { w *= maxH / h; h = maxH; }
+                        }
+                        
+                        canvas.width = w;
+                        canvas.height = h;
+                        let ctx = canvas.getContext('2d');
+                        ctx.drawImage(image, 0, 0, w, h);
+                        img64 = canvas.toDataURL('image/jpeg', 0.7); // 70% quality compression
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function savePlatform() {
+            let name = document.getElementById("p-name").value;
+            let desc = document.getElementById("p-desc").value;
+            let link = document.getElementById("p-link").value;
+            let cat = document.getElementById("p-cat").value;
+            let editIndex = document.getElementById("edit-index").value;
+
+            if(name && link) {
+                let db = JSON.parse(localStorage.getItem("cyber_db") || "[]");
+                
+                if (editIndex === "") {
+                    // Sajili Node mpya
+                    db.push({ name, desc, link, cat: cat, logo: img64 });
+                    alert("Node imesajiliwa kikamilifu!");
+                } else {
+                    // Sasisha / Edit Node iliyopo
+                    let existingLogo = db[editIndex].logo;
+                    // Kama picha mpya haijawekwa, tumia ile ya zamani
+                    let finalLogo = (img64 !== "") ? img64 : existingLogo;
+                    
+                    db[editIndex] = { name, desc, link, cat: cat, logo: finalLogo };
+                    alert("Node imesasishwa kikamilifu!");
+                    resetForm();
+                }
+                
+                localStorage.setItem("cyber_db", JSON.stringify(db));
+                resetInputs();
+                loadAdminNodes();
+            } else {
+                alert("Jaza Jina la Node na Access URL (Link) angalau!");
+            }
+        }
+
+        function loadAdminNodes() {
+            let db = JSON.parse(localStorage.getItem("cyber_db") || "[]");
+            let list = document.getElementById("admin-nodes-list");
+            if(db.length === 0) {
+                list.innerHTML = "<p style='color:#94a3b8; text-align:center;'>Hakuna nodes zilizosajiliwa bado.</p>";
+                return;
+            }
+            list.innerHTML = db.map((item, index) => `
+                <div class="node-item">
+                    <div>
+                        <b style="color:var(--neon-cyan);">${item.name}</b> (${item.cat || 'N/A'})
+                        <br><span style="font-size:12px;">${item.desc}</span>
+                    </div>
+                    <div>
+                        <button class="btn-neon btn-warning" style="width:auto; margin:0 5px 0 0; padding:6px 12px; font-size:12px;" onclick="editNode(${index})">Badili</button>
+                        <button class="btn-neon btn-danger" style="width:auto; margin:0; padding:6px 12px; font-size:12px;" onclick="deleteNode(${index})">Futa</button>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        function deleteNode(index) {
+            let db = JSON.parse(localStorage.getItem("cyber_db") || "[]");
+            db.splice(index, 1);
+            localStorage.setItem("cyber_db", JSON.stringify(db));
+            loadAdminNodes();
+        }
+
+        function editNode(index) {
+            let db = JSON.parse(localStorage.getItem("cyber_db") || "[]");
+            let node = db[index];
+            
+            document.getElementById("p-name").value = node.name;
+            document.getElementById("p-desc").value = node.desc;
+            document.getElementById("p-link").value = node.link;
+            document.getElementById("p-cat").value = node.cat || "Stable";
+            document.getElementById("edit-index").value = index;
+            
+            document.getElementById("form-title").innerText = "Badili / Sasisha Node";
+            document.getElementById("submit-btn").innerText = "SASISHA NODE";
+            document.getElementById("cancel-btn").style.display = "block";
+            
+            // Rejea juu kwenye fomu
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function resetForm() {
+            resetInputs();
+            loadAdminNodes();
+        }
+
+        function resetInputs() {
+            document.getElementById("p-name").value = "";
+            document.getElementById("p-desc").value = "";
+            document.getElementById("p-link").value = "";
+            document.getElementById("p-logo").value = "";
+            document.getElementById("edit-index").value = "";
+            img64 = "";
+            
+            document.getElementById("form-title").innerText = "Sajili Node / Platform Mpya";
+            document.getElementById("submit-btn").innerText = "SAJILI NODE";
+            document.getElementById("cancel-btn").style.display = "none";
+        }
+
+        // --- ADMIN CHAT MANAGEMENT ---
+        function loadAdminChats() {
+            let chats = JSON.parse(localStorage.getItem('investor_chart') || '[]');
+            let chatList = document.getElementById("admin-chat-list");
+            
+            if(chats.length === 0) {
+                chatList.innerHTML = "<p style='color:#94a3b8; text-align:center;'>Hakuna ujumbe wowote kwenye chati kwa sasa.</p>";
+                return;
+            }
+            
+            chatList.innerHTML = chats.map((item, index) => `
+                <div class="chat-admin-item">
+                    <div>
+                        <strong style="color:var(--success);">${item.user}</strong> <span style="font-size:9px; color:#94a3b8;">${item.time}</span>
+                        <br><span style="font-size:13px;">${item.msg}</span>
+                    </div>
+                    <button class="btn-neon btn-danger" style="width:auto; margin:0; padding:6px 12px; font-size:12px;" onclick="deleteChat(${index})">Futa</button>
+                </div>
+            `).join("");
+        }
+
+        function deleteChat(index) {
+            let chats = JSON.parse(localStorage.getItem('investor_chart') || '[]');
+            chats.splice(index, 1);
+            localStorage.setItem('investor_chart', JSON.stringify(chats));
+            loadAdminChats();
+        }
+
+        function clearAllChats() {
+            if (confirm("Je, una uhakika unataka kufuta jumbe ZOTE za chati kutoka kwa mtandao?")) {
+                localStorage.setItem('investor_chart', JSON.stringify([]));
+                loadAdminChats();
+            }
+        }
+    </script>
+</body>
+</html>
