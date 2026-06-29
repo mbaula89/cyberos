@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBEROS | Enterprise App | V1.0</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-deep: #0A0E17;
+            --neon-cyan: #00F2FF;
+            --glass: rgba(30, 41, 59, 0.7);
+            --text-main: #E2E8F0;
+            --danger: #FF4D4D;
+            --success: #00FF9D;
+            --gold: #FFD700;
+        }
+
+        * { box-sizing: border-box; transition: 0.4s ease; }
+        body { background: var(--bg-deep); color: var(--text-main); font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding-bottom: 140px; }
+
+        /* --- SPLASH SCREEN --- */
+        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-deep); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; animation: fadeOut 0.6s ease-in-out 1.5s forwards; }
+        .logo-sphere { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--neon-cyan); box-shadow: 0 0 30px var(--neon-cyan); animation: pulse 1.5s infinite alternate; }
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 15px var(--neon-cyan); } 100% { transform: scale(1.05); box-shadow: 0 0 40px var(--neon-cyan); } }
+        @keyframes fadeOut { 0% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: hidden; z-index: -1; } }
+
+        /* --- COMPONENTS --- */
+        .header-main { padding: 30px; text-align: center; border-bottom: 2px solid var(--neon-cyan); background: linear-gradient(180deg, #1e293b, #0A0E17); }
+        
+        .ticker-wrap { background: #000; padding: 12px; overflow: hidden; border: 1px solid #333; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+        .search-area { padding: 25px 20px; }
+        .search-input { width: 100%; padding: 16px; border-radius: 30px; border: none; background: var(--glass); color: white; border: 1px solid #334155; text-align: center; font-size: 15px; }
+        .search-input:focus { outline: none; box-shadow: 0 0 20px var(--neon-cyan); border-color: var(--neon-cyan); }
+
+        .glass-card { background: var(--glass); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.1); padding: 22px; border-radius: 22px; margin: 15px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        .btn-neon { background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 12px 24px; border-radius: 12px; cursor: pointer; text-decoration: none; display: inline-block; font-weight: bold; margin-top: 6px; font-size: 14px; }
+        .btn-neon:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
+        
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; box-shadow: 0 0 15px var(--danger); }
+        .btn-success { border-color: var(--success); color: var(--success); }
+        .btn-success:hover { background: var(--success); color: #000; box-shadow: 0 0 15px var(--success); }
+
+        input, select { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #334155; background: #0A0E17; color: #fff; font-size: 14px; }
+        input:focus, select:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
+
+        .tab-content { display: none; }
+        .tab-active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- BOTTOM NAV --- */
+        .bottom-nav { 
+            position: fixed; bottom: 0; width: 100%; 
+            display: flex; justify-content: space-around; 
+            background: var(--bg-deep); padding: 15px 20px; 
+            border-top: 1px solid var(--neon-cyan); z-index: 1000; 
+            backdrop-filter: blur(20px); align-items: center; 
+        }
+        .nav-icon-wrapper { 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; cursor: pointer; color: var(--neon-cyan); 
+        }
+        .nav-icon-wrapper i { 
+            font-size: 32px; filter: drop-shadow(0 0 6px var(--neon-cyan)); 
+        }
+        .nav-icon-wrapper span { 
+            font-size: 12px; margin-top: 5px; color: var(--text-main); font-weight: 600; 
+        }
+        
+        .profile-circle { width: 95px; height: 95px; background: var(--neon-cyan); border-radius: 50%; color: #000; display: flex; align-items: center; justify-content: center; font-size: 38px; font-weight: bold; margin: 0 auto 18px; box-shadow: 0 0 20px var(--neon-cyan); }
+        .fav-badge { color: var(--gold); cursor: pointer; float: right; font-size: 22px; }
+
+        /* --- CHART / CHATROOM UI --- */
+        .chat-wrapper { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .chat-history { height: 280px; overflow-y: auto; background: rgba(0,0,0,0.4); border-radius: 15px; padding: 15px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 8px; }
+        .chat-bubble { background: rgba(0,242,255,0.08); border-left: 3px solid var(--neon-cyan); padding: 10px 14px; border-radius: 8px; font-size: 14px; word-break: break-word; }
+        .chat-input-group { display: flex; gap: 8px; }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <img src="1782653420149_1.png" class="logo-sphere" alt="CYBEROS Logo">
+        <h2 style="color: var(--neon-cyan); margin-top: 25px; letter-spacing: 2px;">CYBEROS</h2>
+        <p style="font-size: 13px; color: #94a3b8;">ENTERPRISE INVESTMENT PLATFORM</p>
+    </div>
+
+    <header class="header-main">
+        <img src="1782653420149_1.png" style="width: 85px; height: 85px; border-radius: 50%; border: 2px solid var(--neon-cyan); box-shadow: 0 0 15px var(--neon-cyan);" alt="Logo">
+        <h1>CYBEROS</h1>
+    </header>
+
+    <div class="ticker-wrap">
+        <marquee><span id="live-note" style="color:var(--neon-cyan); font-weight:bold;">CYBEROS V1.0 LIVE ● SYSTEM STATUS: STABLE ● NETWORK: GLOBAL INVESTMENT</span></marquee>
+    </div>
+
+    <div id="home" class="tab-content tab-active">
+        <div class="search-area">
+            <input type="text" id="search-box" class="search-input" placeholder="🔍 Tafuta platforms, nodes au opportunities..." onkeyup="filterPlatforms()">
+        </div>
+        <div id="platform-container"></div>
+    </div>
+
+    <div id="explore" class="tab-content">
+        <div class="glass-card">
+            <h3>🧭 Kategoria za Investment Nodes</h3>
+            <p style="font-size:13px; color:#94a3b8;">Chuja kategoria kulingana na mpangilio wako wa uwekezaji na ukuaji wa kidijitali.</p>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top: 15px;">
+                <button class="btn-neon" style="width:auto;" onclick="filterCategory('All')">Zote</button>
+                <button class="btn-neon" style="width:auto;" onclick="filterCategory('Stable')">Stable</button>
+                <button class="btn-neon" style="width:auto;" onclick="filterCategory('Growth')">Growth</button>
+                <button class="btn-neon" style="width:auto;" onclick="filterCategory('Tech')">Tech</button>
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <h3>⭐ Vipendwa Vyangu</h3>
+            <div id="favorites-container"></div>
+        </div>
+    </div>
+
+    <div id="alerts" class="tab-content">
+        <div class="glass-card">
+            <h3>🔔 Investment Live Feed</h3>
+            <p style="border-left: 2px solid var(--neon-cyan); padding-left:12px; font-size:15px;" id="alert-text">Checking live investment updates...</p>
+        </div>
+        
+        <div class="glass-card">
+            <h3>💬 Investor Community Chartroom</h3>
+            <div class="chat-wrapper">
+                <div class="chat-history" id="chart-window"></div>
+                <div class="chat-input-group" style="margin-top:10px;">
+                    <input type="text" id="chart-user" placeholder="Jina lako / Investor" style="width:35%; margin:0;">
+                    <input type="text" id="chart-msg" placeholder="Andika ujumbe..." style="width:65%; margin:0;">
+                </div>
+                <button class="btn-neon btn-success" onclick="postChartMessage()" style="width:100%; margin-top:12px;">Tuma Ujumbe Kwenye Chati</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile" class="tab-content">
+        <div class="glass-card" style="text-align: center;">
+            <div class="profile-circle">INV</div>
+            <h3>👤 <span id="prof-name">MWEKEZAJI MKUU</span></h3>
+            <p style="color:var(--neon-cyan); font-weight: bold;">Personal Investment Account</p>
+            <p style="font-size:13px; color:#94a3b8;">CYBEROS - International Standard Investment Platforms & Ecosystem.</p>
+            
+            <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 18px;">
+                <p>📍 Global Network</p>
+                <p style="margin-top:18px; font-size:14px; color:var(--neon-cyan);">Jiunge na Jumuiya zetu za Uwekezaji:</p>
+                <a href="https://chat.whatsapp.com/HbAwSX1IPGt2wAn53YPHKE?s=sw&p=a&mlu=2" target="_blank" class="btn-neon" style="display:block; margin: 12px 0;">NODE 1: Community Chat</a>
+                <a href="https://chat.whatsapp.com/J23UAr66MwI4q4b9xQILd8?s=cl&p=a&ilr=1" target="_blank" class="btn-neon" style="display:block; margin: 12px 0; border-color:var(--success); color:var(--success);">NODE 2: Support Group</a>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav" id="main-nav">
+        <div class="nav-icon-wrapper" onclick="showTab('home')">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-icon-wrapper" onclick="showTab('explore')">
+            <i class="fa-solid fa-compass"></i>
+            <span>Explore</span>
+        </div>
+        <div class="nav-icon-wrapper" onclick="showTab('alerts')">
+            <i class="fa-solid fa-bell"></i>
+            <span>Alerts</span>
+        </div>
+        <div class="nav-icon-wrapper" onclick="showTab('profile')">
+            <i class="fa-solid fa-user"></i>
+            <span>Profile</span>
+        </div>
+    </nav>
+
+    <script>
+        // System Core Data Management
+        let allPlatforms = [];
+        let favorites = JSON.parse(localStorage.getItem('fav_nodes') || '[]');
+        let chartMessages = JSON.parse(localStorage.getItem('investor_chart') || '[]');
+
+        window.onload = function() {
+            loadSystemData();
+            loadChartMessages();
+        };
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('tab-active'));
+            document.getElementById(tabId).classList.add('tab-active');
+        }
+
+        function loadSystemData() {
+            allPlatforms = JSON.parse(localStorage.getItem("cyber_db") || "[]");
+            renderPlatforms(allPlatforms);
+
+            let note = localStorage.getItem("cyber_note");
+            if(note) {
+                document.getElementById("live-note").innerText = note;
+                document.getElementById("alert-text").innerText = note;
+            }
+            renderFavoritesList();
+        }
+
+        function renderPlatforms(data) {
+            let container = document.getElementById("platform-container");
+            container.innerHTML = "";
+            
+            if (data.length === 0) {
+                container.innerHTML = `<div class="glass-card"><p style="text-align:center; color:#94a3b8;">Hakuna investment nodes zilizowekwa kwenye mtandao kwa sasa.</p></div>`;
+                return;
+            }
+            
+            data.forEach((p) => {
+                let isFav = favorites.includes(p.name);
+                let favStar = isFav ? '★' : '☆';
+                
+                let card = document.createElement("div");
+                card.className = "glass-card";
+                card.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:12px;">
+                        <div style="flex-grow:1;">
+                            <h3 style="color:var(--neon-cyan); margin:0;">${p.name} <span class="fav-badge" onclick="toggleFavorite('${p.name}')">${favStar}</span></h3>
+                            <span style="font-size:13px; color:#94a3b8;">${p.desc}</span>
+                            <br><span style="font-size:10px; background:rgba(0,242,255,0.1); padding:3px 8px; border-radius:5px; color:var(--neon-cyan); display:inline-block; margin-top:8px;">Category: ${p.cat}</span>
+                        </div>
+                    </div>
+                    <a href="${p.link.startsWith('http') ? p.link : 'https://'+p.link}" target="_blank" class="btn-neon" style="width:100%; text-align:center;">Access Investment Node</a>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleFavorite(platName) {
+            let index = favorites.indexOf(platName);
+            if (index === -1) {
+                favorites.push(platName);
+            } else {
+                favorites.splice(index, 1);
+            }
+            localStorage.setItem("fav_nodes", JSON.stringify(favorites));
+            renderPlatforms(allPlatforms);
+            renderFavoritesList();
+        }
+
+        function renderFavoritesList() {
+            let container = document.getElementById("favorites-container");
+            if(favorites.length === 0) {
+                container.innerHTML = `<p style="color:#94a3b8; font-size:13px; text-align:center;">Hujaweka vipendwa vyovyote bado.</p>`;
+                return;
+            }
+            container.innerHTML = favorites.map(fav => `
+                <div style="background:rgba(0,242,255,0.05); border:1px solid var(--neon-cyan); padding:12px; border-radius:10px; margin:6px 0; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:var(--neon-cyan); font-weight:bold;">${fav}</span>
+                    <span style="color:var(--danger); cursor:pointer; font-size:13px;" onclick="toggleFavorite('${fav}')">Ondoa</span>
+                </div>
+            `).join("");
+        }
+
+        function filterCategory(cat) {
+            if (cat === 'All') {
+                renderPlatforms(allPlatforms);
+            } else {
+                let filtered = allPlatforms.filter(item => item.cat === cat);
+                renderPlatforms(filtered);
+            }
+            showTab('home');
+        }
+
+        function filterPlatforms() {
+            let query = document.getElementById("search-box").value.toLowerCase();
+            let matches = allPlatforms.filter(p => p.name.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query));
+            renderPlatforms(matches);
+        }
+
+        // --- CHART FUNCTIONALITIES ---
+        function postChartMessage() {
+            let user = document.getElementById("chart-user").value || "Mwekezaji";
+            let msg = document.getElementById("chart-msg").value;
+            
+            if (msg.trim() !== "") {
+                let payload = { user, msg, time: new Date().toLocaleTimeString() };
+                chartMessages.push(payload);
+                localStorage.setItem('investor_chart', JSON.stringify(chartMessages));
+                
+                document.getElementById("chart-msg").value = "";
+                loadChartMessages();
+            } else {
+                alert("Jaza ujumbe kabla ya kutuma kwenye chart!");
+            }
+        }
+
+        function loadChartMessages() {
+            let window = document.getElementById("chart-window");
+            window.innerHTML = "";
+            
+            chartMessages.forEach(item => {
+                let bubble = document.createElement("div");
+                bubble.className = "chat-bubble";
+                bubble.innerHTML = `<strong>${item.user}:</strong> ${item.msg} <span style="font-size:9px; color:#64748b; float:right; margin-left:10px;">${item.time}</span>`;
+                window.appendChild(bubble);
+            });
+            
+            window.scrollTop = window.scrollHeight;
+        }
+
+        // Retaining Architectural Stability
+        const architecturalIntegrityPadding = () => {
+            console.log("CYBEROS Personal Client Initialized...");
+        };
+        architecturalIntegrityPadding();
+    </script>
+</body>
+</html>
